@@ -428,14 +428,8 @@ requestBuilder req Connection {..} = do
             later = writeBuilder body
         return (Just len, now, later)
     toTriple (RequestBodyStream len stream) = do
-        -- See https://github.com/snoyberg/http-client/issues/74 for usage
-        -- of flush here.
-        let body = writeStream (Just . fromIntegral $ len) stream
-            -- Don't check for a bad send on the headers themselves.
-            -- Ideally, we'd do the same thing for the other request body
-            -- types, but it would also introduce a performance hit since
-            -- we couldn't merge request headers and bodies together.
-            now  = flushHeaders (Just len) >> checkBadSend body
+        let now  = checkBadSend $ flushHeaders (Just len)
+            body = writeStream (Just . fromIntegral $ len) stream
         return (Just len, now, body)
     toTriple (RequestBodyStreamChunked stream) = do
         let body = writeStream Nothing stream
